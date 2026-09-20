@@ -57,6 +57,24 @@ export interface ProjectMaterialItem {
   source: ItemSource
 }
 
+/** 项目子任务（可勾选清单） */
+export interface ProjectTask {
+  id: string
+  title: string
+  done: boolean
+  createdAt: number
+  updatedAt: number
+  completedAt?: number // 勾选完成的时间
+}
+
+/** 子任务进度统计 */
+export interface TaskProgress {
+  total: number
+  done: number
+  percent: number // 0-100，无任务时为 0
+  allDone: boolean // 有任务且全部完成
+}
+
 export interface ProjectSummary {
   gains: string // 收获
   problems: string // 遇到的问题
@@ -77,6 +95,7 @@ export interface Project {
   difficulty: Difficulty
   tools: ProjectToolItem[]
   materials: ProjectMaterialItem[]
+  tasks?: ProjectTask[] // 可勾选的子任务清单，项目完成后保留供回看
   status: ProjectStatus
   actualHours?: number // 实际用时
   actualCost?: number // 实际花费

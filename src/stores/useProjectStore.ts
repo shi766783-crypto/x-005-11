@@ -3,6 +3,8 @@ import {
   DIFFICULTY_WEIGHT,
   type Project,
   type ProjectGap,
+  type ProjectTask,
+  type TaskProgress,
   type ToolGap,
   type MaterialGap,
   type Tool,
@@ -61,6 +63,52 @@ export function useProjectStore() {
 
   function getProject(id: string): Project | undefined {
     return projects.value.find((p) => p.id === id)
+  }
+
+  // ---------- 子任务清单 ----------
+
+  function addTask(projectId: string, title: string): ProjectTask | undefined {
+    const project = projects.value.find((p) => p.id === projectId)
+    if (!project || !title.trim()) return
+    const now = Date.now()
+    const task: ProjectTask = { id: uid('task_'), title: title.trim(), done: false, createdAt: now, updatedAt: now }
+    if (!project.tasks) project.tasks = []
+    project.tasks.push(task)
+    project.updatedAt = now
+    return task
+  }
+
+  function updateTask(projectId: string, taskId: string, patch: Partial<Pick<ProjectTask, 'title' | 'done'>>) {
+    const project = projects.value.find((p) => p.id === projectId)
+    const task = project?.tasks?.find((t) => t.id === taskId)
+    if (!project || !task) return
+    if (patch.title !== undefined) task.title = patch.title
+    if (patch.done !== undefined) {
+      task.done = patch.done
+      task.completedAt = patch.done ? Date.now() : undefined
+    }
+    task.updatedAt = Date.now()
+    project.updatedAt = Date.now()
+  }
+
+  function removeTask(projectId: string, taskId: string) {
+    const project = projects.value.find((p) => p.id === projectId)
+    if (!project?.tasks) return
+    project.tasks = project.tasks.filter((t) => t.id !== taskId)
+    project.updatedAt = Date.now()
+  }
+
+  /** 子任务进度统计（无任务时 total/done/percent 均为 0） */
+  function taskProgress(project: Project): TaskProgress {
+    const tasks = project.tasks ?? []
+    const total = tasks.length
+    const done = tasks.filter((t) => t.done).length
+    return {
+      total,
+      done,
+      percent: total === 0 ? 0 : Math.round((done / total) * 100),
+      allDone: total > 0 && done === total,
+    }
   }
 
   /** 项目缺口分析（核心计算属性逻辑）：对比库存，生成待采购/待借用清单 */
@@ -130,6 +178,10 @@ export function useProjectStore() {
     removeProject,
     getProject,
     computeGap,
+    addTask,
+    updateTask,
+    removeTask,
+    taskProgress,
     completedProjects,
     inProgressProjects,
     completedThisMonth,
