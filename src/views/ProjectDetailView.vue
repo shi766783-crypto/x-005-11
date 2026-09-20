@@ -6,6 +6,7 @@ import type { ProjectStatus } from '../types'
 import { PROJECT_STATUSES, DIFFICULTY_TAG, STATUS_TAG } from '../types'
 import { useProjectStore } from '../stores/useProjectStore'
 import GapPanel from '../components/GapPanel.vue'
+import ProjectTaskList from '../components/ProjectTaskList.vue'
 import ImagesUpload from '../components/ImagesUpload.vue'
 import { formatDate, toNumber } from '../utils/format'
 
@@ -109,6 +110,11 @@ function saveRecord() {
         <p style="margin: 6px 0 0">{{ project.description || '（暂无描述）' }}</p>
       </div>
     </div>
+
+    <section class="card" style="margin-bottom: 16px">
+      <div class="section-title">子任务清单</div>
+      <ProjectTaskList :project="project" />
+    </section>
 
     <section class="card" style="margin-bottom: 16px">
       <div class="section-title">库存缺口分析</div>

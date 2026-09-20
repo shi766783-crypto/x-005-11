@@ -3,6 +3,8 @@ import {
   DIFFICULTY_WEIGHT,
   type Project,
   type ProjectGap,
+  type ProjectTask,
+  type TaskProgress,
   type ToolGap,
   type MaterialGap,
   type Tool,
@@ -61,6 +63,59 @@ export function useProjectStore() {
 
   function getProject(id: string): Project | undefined {
     return projects.value.find((p) => p.id === id)
+  }
+
+  /** 子任务清单整体进度：已勾选数 / 总数（百分比），无子任务时为 0 */
+  function taskProgress(project: Project): TaskProgress {
+    const tasks = project.tasks ?? []
+    const total = tasks.length
+    const done = tasks.filter((t) => t.done).length
+    return { total, done, percent: total === 0 ? 0 : Math.round((done / total) * 100) }
+  }
+
+  /** 新增子任务，返回新任务 */
+  function addTask(projectId: string, title: string): ProjectTask | undefined {
+    const project = getProject(projectId)
+    if (!project) return undefined
+    if (!project.tasks) project.tasks = []
+    const task: ProjectTask = { id: uid('task_'), title: title.trim(), done: false, createdAt: Date.now() }
+    project.tasks.push(task)
+    touch(project)
+    return task
+  }
+
+  /** 修改子任务标题 */
+  function updateTask(projectId: string, taskId: string, title: string) {
+    const project = getProject(projectId)
+    const task = project?.tasks?.find((t) => t.id === taskId)
+    if (!project || !task) return
+    const trimmed = title.trim()
+    if (!trimmed || trimmed === task.title) return
+    task.title = trimmed
+    touch(project)
+  }
+
+  /** 勾选 / 取消勾选子任务，同步记录或清空完成时间 */
+  function toggleTask(projectId: string, taskId: string, done?: boolean) {
+    const project = getProject(projectId)
+    const task = project?.tasks?.find((t) => t.id === taskId)
+    if (!project || !task) return
+    task.done = done ?? !task.done
+    task.completedAt = task.done ? Date.now() : undefined
+    touch(project)
+  }
+
+  /** 删除子任务 */
+  function removeTask(projectId: string, taskId: string) {
+    const project = getProject(projectId)
+    if (!project?.tasks) return
+    project.tasks = project.tasks.filter((t) => t.id !== taskId)
+    touch(project)
+  }
+
+  /** 更新 updatedAt（持久化由 storage 的深度 watch 负责） */
+  function touch(project: Project) {
+    project.updatedAt = Date.now()
   }
 
   /** 项目缺口分析（核心计算属性逻辑）：对比库存，生成待采购/待借用清单 */
@@ -130,6 +185,11 @@ export function useProjectStore() {
     removeProject,
     getProject,
     computeGap,
+    taskProgress,
+    addTask,
+    updateTask,
+    toggleTask,
+    removeTask,
     completedProjects,
     inProgressProjects,
     completedThisMonth,

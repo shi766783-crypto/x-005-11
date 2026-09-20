@@ -31,6 +31,10 @@ function gapCount(p: Project): number {
   return gap.tools.length + gap.materials.length
 }
 
+function taskProgress(p: Project) {
+  return projectStore.taskProgress(p)
+}
+
 function openCreate() {
   editingProject.value = null
   dialogVisible.value = true
@@ -78,6 +82,21 @@ async function remove(p: Project) {
         <el-table-column label="状态" width="90" align="center">
           <template #default="{ row }">
             <el-tag :type="STATUS_TAG[row.status as keyof typeof STATUS_TAG]" size="small">{{ row.status }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="子任务进度" width="130" align="center">
+          <template #default="{ row }">
+            <template v-if="taskProgress(row).total > 0">
+              <el-progress
+                :percentage="taskProgress(row).percent"
+                :stroke-width="8"
+                :status="taskProgress(row).percent === 100 ? 'success' : undefined"
+              />
+              <span class="muted" style="font-size: 12px">
+                {{ taskProgress(row).done }}/{{ taskProgress(row).total }}
+              </span>
+            </template>
+            <span v-else class="muted">—</span>
           </template>
         </el-table-column>
         <el-table-column label="库存缺口" width="110" align="center">
